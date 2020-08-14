@@ -8,24 +8,24 @@ const defaultVar = require('@delon/theme/theme-default');
 const darkVar = require('@delon/theme/theme-dark');
 const compactVar = require('@delon/theme/theme-compact');
 
-import { ConfigThemeItem, BuildCssOptions, ConfigTheme } from './interfaces';
+import { ThemeCssItem, BuildThemeCSSOptions, ThemeCssConfig } from './theme-css.types';
 import { deepMergeKey } from './utils';
 
 const root = process.cwd();
 
-function fixConfig(config: ConfigTheme): ConfigTheme {
+function fixConfig(config: ThemeCssConfig): ThemeCssConfig {
   config = deepMergeKey(
     {
       extraLibraries: [],
       list: [],
       min: true,
       projectStylePath: 'src/styles.less',
-    } as ConfigTheme,
+    } as ThemeCssConfig,
     true,
     config,
   );
 
-  const list: ConfigThemeItem[] = [];
+  const list: ThemeCssItem[] = [];
   config.list!.forEach(item => {
     if (!item.theme && !item.modifyVars) {
       return;
@@ -48,7 +48,7 @@ function fixConfig(config: ConfigTheme): ConfigTheme {
   return config;
 }
 
-function genVar(projectStylePath: string, item: ConfigThemeItem): { [key: string]: string } {
+function genVar(projectStylePath: string, item: ThemeCssItem): { [key: string]: string } {
   const fileContent = item.projectThemeVar?.map(path => readFileSync(join(root, path), 'utf-8'))!;
   // add project theme
   fileContent.push(readFileSync(join(root, projectStylePath), 'utf-8'));
@@ -74,7 +74,7 @@ function genVar(projectStylePath: string, item: ConfigThemeItem): { [key: string
   };
 }
 
-async function buildCss(options: BuildCssOptions): Promise<string> {
+async function buildCss(options: BuildThemeCSSOptions): Promise<string> {
   const plugins = [new LessPluginNpmImport({ prefix: '~' })];
   if (options.min === true) {
     plugins.push(new LessPluginCleanCSS({ advanced: true }));
@@ -90,7 +90,7 @@ async function buildCss(options: BuildCssOptions): Promise<string> {
     .then(res => res.css);
 }
 
-export async function generator(config: ConfigTheme): Promise<void> {
+export async function buildThemeCSS(config: ThemeCssConfig): Promise<void> {
   config = fixConfig(config);
 
   const promises = config.list?.map(item => {
@@ -103,7 +103,7 @@ export async function generator(config: ConfigTheme): Promise<void> {
       ...config.extraLibraries!.map(v => `@import '${v}';`),
     ].join('');
     const modifyVars = genVar(config.projectStylePath!, item);
-    const options: BuildCssOptions = {
+    const options: BuildThemeCSSOptions = {
       min: config.min,
       content,
       modifyVars,

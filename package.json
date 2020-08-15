@@ -1,6 +1,6 @@
 {
   "name": "ng-alain-plugin-theme",
-  "version": "0.0.1-rc.1",
+  "version": "1.0.0",
   "description": "NG-ALAIN theme plugin",
   "keywords": [
     "delon",
@@ -31,6 +31,7 @@
     "release": "npm run build && cd dist && npm publish --access public"
   },
   "dependencies": {
+    "ng-zorro-antd": "^10.0.0-beta.2",
     "meow": "^7.1.0",
     "postcss": "^7.0.0",
     "hash.js": "^1.0.0",

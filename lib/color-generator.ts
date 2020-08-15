@@ -4,7 +4,7 @@
 
 import less from 'less';
 import { dirname, join } from 'path';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 const lessToJs = require('less-vars-to-js');
 const postcss = require('postcss');
 const LessPluginCleanCSS = require('less-plugin-clean-css');
@@ -31,6 +31,9 @@ async function buildLess(content: string, min = false): Promise<string> {
  * 扁平化所有 less 文件
  */
 function combineLess(filePath: string): string {
+  if (!existsSync(filePath)) {
+    return '';
+  }
   const fileContent = readFileSync(filePath).toString();
   const directory = dirname(filePath);
   return fileContent

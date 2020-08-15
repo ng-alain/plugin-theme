@@ -9,13 +9,9 @@ export class ColorLessConfig {
    */
   outputFilePath?: string;
   /**
-   * Specify the styles directory, default: `src`
+   * Specify the styles directory, default: `./src/styles`
    */
   stylesDir?: string;
-  /**
-   * Project entry style file path, default: `./src/styles.less`
-   */
-  mainLessFile?: string;
   /**
    * Theme Less entry, default: `./src/styles/theme.less`
    */

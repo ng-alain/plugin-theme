@@ -1,4 +1,4 @@
-// tslint:disable: prefer-const
+// tslint:disable: prefer-const prefer-conditional-expression
 /**
  * The idea comes from [antd-theme-generator](https://github.com/mzohaibqc/antd-theme-generator/blob/master/index.js)
  */
@@ -477,7 +477,8 @@ export async function generateTheme({
 
     // This is to replace \9 in Ant Design styles
     css = css.replace(/\\9/g, '');
-    css = `${css.trim()}\n${combineLess(path.join(antdPath, './style/themes/default.less'), nodeModulesPath)}`;
+    const antdStyle = combineLess(path.join(antdPath, './style/themes/default.less'), nodeModulesPath);
+    css = `${css.trim()}\n\n${antdStyle}`;
 
     themeVars.reverse().forEach(varName => {
       css = css.replace(new RegExp(`${varName}( *):(.*);`, 'g'), '');

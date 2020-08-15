@@ -26,11 +26,7 @@ jobs:
         run: npm install
 
       - name: run
-        run: |
-          npm run test
-          cat ./coverage/lcov.info | ./node_modules/.bin/codecov
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: npm run test
 
   lint:
     runs-on: ubuntu-latest

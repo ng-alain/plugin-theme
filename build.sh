@@ -17,9 +17,8 @@ $(npm bin)/tsc -d
 
 cp LICENSE dist/LICENSE
 cp package.json dist/package.json
-cp schema.json dist/schema.json
 cp README.md dist/README.md
 
 if [[ ${TEST} == true ]]; then
-  cp -fr dist/* ../ng-alain/node_modules/ng-alain-plugin-theme
+  cp -fr dist/* ../delon/node_modules/ng-alain-plugin-theme
 fi

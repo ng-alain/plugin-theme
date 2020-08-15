@@ -4,28 +4,26 @@ import less from 'less';
 const LessPluginCleanCSS = require('less-plugin-clean-css');
 const LessPluginNpmImport = require('less-plugin-npm-import');
 const lessToJs = require('less-vars-to-js');
-const defaultVar = require('@delon/theme/theme-default');
-const darkVar = require('@delon/theme/theme-dark');
-const compactVar = require('@delon/theme/theme-compact');
 
-import { ConfigThemeItem, BuildCssOptions, ConfigTheme } from './interfaces';
+import { ThemeCssItem, BuildThemeCSSOptions, ThemeCssConfig } from './theme-css.types';
 import { deepMergeKey } from './utils';
 
 const root = process.cwd();
 
-function fixConfig(config: ConfigTheme): ConfigTheme {
+function fixConfig(config: ThemeCssConfig): ThemeCssConfig {
   config = deepMergeKey(
     {
-      extraLibraries: [],
+      additionalLibraries: [],
+      additionalThemeVars: [],
       list: [],
       min: true,
       projectStylePath: 'src/styles.less',
-    } as ConfigTheme,
+    } as ThemeCssConfig,
     true,
     config,
   );
 
-  const list: ConfigThemeItem[] = [];
+  const list: ThemeCssItem[] = [];
   config.list!.forEach(item => {
     if (!item.theme && !item.modifyVars) {
       return;
@@ -48,10 +46,49 @@ function fixConfig(config: ConfigTheme): ConfigTheme {
   return config;
 }
 
-function genVar(projectStylePath: string, item: ConfigThemeItem): { [key: string]: string } {
+function genThemeVars(type: 'default' | 'dark' | 'compact', extraThemeVars: string[]): { [key: string]: string } {
+  const contents: string[] = [];
+  // ng-zorro-antd
+  const ngZorroAntdStylePath = join(root, 'node_modules', 'ng-zorro-antd', 'style');
+  if (existsSync(ngZorroAntdStylePath)) {
+    contents.push(readFileSync(join(ngZorroAntdStylePath, 'color', 'colors.less'), 'utf-8'));
+    contents.push(readFileSync(join(ngZorroAntdStylePath, 'themes', `${type}.less`), 'utf-8'));
+  }
+  // @delon
+  const delonPath = join(root, 'node_modules', '@delon');
+  // @delon/theme/system
+  const delonSystem = join(delonPath, 'theme');
+  if (existsSync(delonSystem)) {
+    contents.push(readFileSync(join(delonSystem, 'system', `theme-${type}.less`), 'utf-8'));
+    contents.push(readFileSync(join(delonSystem, 'layout', 'default', `theme-${type}.less`), 'utf-8'));
+    contents.push(readFileSync(join(delonSystem, 'layout', 'fullscreen', `theme-${type}.less`), 'utf-8'));
+  }
+  // @delon/abc
+  const delonABC = join(delonPath, 'abc');
+  if (existsSync(delonABC)) {
+    contents.push(readFileSync(join(delonABC, `theme-${type}.less`), 'utf-8'));
+  }
+  // @delon/chart
+  const delonChart = join(delonPath, 'chart');
+  if (existsSync(delonChart)) {
+    contents.push(readFileSync(join(delonChart, `theme-${type}.less`), 'utf-8'));
+  }
+
+  // extraThemeVars
+  if (Array.isArray(extraThemeVars) && extraThemeVars.length > 0) {
+    contents.push(...extraThemeVars.map(path => readFileSync(join(root, path), 'utf-8')));
+  }
+
+  return lessToJs(contents.join(''), {
+    stripPrefix: true,
+    resolveVariables: false,
+  });
+}
+
+function genVar(config: ThemeCssConfig, item: ThemeCssItem): { [key: string]: string } {
   const fileContent = item.projectThemeVar?.map(path => readFileSync(join(root, path), 'utf-8'))!;
   // add project theme
-  fileContent.push(readFileSync(join(root, projectStylePath), 'utf-8'));
+  fileContent.push(readFileSync(join(root, config.projectStylePath!), 'utf-8'));
   let projectTheme: { [key: string]: string } = {};
   if (fileContent) {
     projectTheme = lessToJs(fileContent.join(''), {
@@ -66,15 +103,15 @@ function genVar(projectStylePath: string, item: ConfigThemeItem): { [key: string
     stripPrefixOfModifyVars[newKey] = modifyVars[key];
   });
   return {
-    ...defaultVar,
-    ...(item.theme === 'dark' ? darkVar : null),
-    ...(item.theme === 'compact' ? compactVar : null),
+    ...genThemeVars('default', config.additionalThemeVars!),
+    ...(item.theme === 'dark' ? genThemeVars('dark', config.additionalThemeVars!) : null),
+    ...(item.theme === 'compact' ? genThemeVars('compact', config.additionalThemeVars!) : null),
     ...projectTheme,
     ...stripPrefixOfModifyVars,
   };
 }
 
-async function buildCss(options: BuildCssOptions): Promise<string> {
+async function buildCss(options: BuildThemeCSSOptions): Promise<string> {
   const plugins = [new LessPluginNpmImport({ prefix: '~' })];
   if (options.min === true) {
     plugins.push(new LessPluginCleanCSS({ advanced: true }));
@@ -90,7 +127,7 @@ async function buildCss(options: BuildCssOptions): Promise<string> {
     .then(res => res.css);
 }
 
-export async function generator(config: ConfigTheme): Promise<void> {
+export async function buildThemeCSS(config: ThemeCssConfig): Promise<void> {
   config = fixConfig(config);
 
   const promises = config.list?.map(item => {
@@ -100,10 +137,10 @@ export async function generator(config: ConfigTheme): Promise<void> {
       // message:'error evaluating function `color`: JavaScript evaluation error: 'ReferenceError: colorPalette is not defined''
       // `@import '${join('node_modules/ng-zorro-antd/style/color/colors.less')}'`,
       `@import '${config.projectStylePath}';`,
-      ...config.extraLibraries!.map(v => `@import '${v}';`),
+      ...config.additionalLibraries!.map(v => `@import '${v}';`),
     ].join('');
-    const modifyVars = genVar(config.projectStylePath!, item);
-    const options: BuildCssOptions = {
+    const modifyVars = genVar(config, item);
+    const options: BuildThemeCSSOptions = {
       min: config.min,
       content,
       modifyVars,

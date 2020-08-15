@@ -1,15 +1,17 @@
-export interface ConfigTheme {
+export interface ThemeCssConfig {
   /** Project entry style file path, default: `src/styles.less` */
   projectStylePath?: string;
-  /** List of additional library style entries */
-  extraLibraries?: string[];
+  /** Additional library style entries */
+  additionalLibraries?: string[];
+  /** Additional theme variables entries */
+  additionalThemeVars?: string[];
   /** Whether to compress, default: `true` */
   min?: boolean;
   /** Theme list */
-  list?: ConfigThemeItem[];
+  list?: ThemeCssItem[];
 }
 
-export interface ConfigThemeItem {
+export interface ThemeCssItem {
   /**
    * Unique identifier
    */
@@ -32,7 +34,7 @@ export interface ConfigThemeItem {
   modifyVars?: { [key: string]: string };
 }
 
-export interface BuildCssOptions {
+export interface BuildThemeCSSOptions {
   content: string;
   /** 是否压缩，默认：`true` */
   min?: boolean;

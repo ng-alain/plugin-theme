@@ -3,7 +3,7 @@
 NG-ALAIN theme plugin.
 
 [![NPM version](https://img.shields.io/npm/v/ng-alain-plugin-theme.svg?style=flat-square)](https://www.npmjs.com/package/ng-alain-plugin-theme)
-![Ci](https://github.com/ng-alain/ng-alain-plugin-theme/workflows/Ci/badge.svg)
+![Ci](https://github.com/ng-alain/plugin-theme/workflows/Ci/badge.svg)
 
 ## Features
 

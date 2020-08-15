@@ -14,17 +14,20 @@ describe('theme-css', () => {
 
   it(`should be dark theme`, async () => {
     await buildThemeCSS({ list: [{ theme: 'dark', filePath }] });
-    expectIncludeCss(`background:#1f1f1f;`);
+    expectIncludeCss(`.a{color:#000}`);
   }).timeout(TIMEOUT);
 
-  it(`should be #f50 to #f60 via modifyVars`, async () => {
-    await buildThemeCSS({ list: [{ key: 'custom', modifyVars: { '@a': '#f60' }, filePath }] });
-    expectIncludeCss(`.a{color:#f60}`);
+  it(`should be #000 to #fff via modifyVars`, async () => {
+    await buildThemeCSS({ list: [{ key: 'custom', modifyVars: { '@primary-color': '#fff' }, filePath }] });
+    expectIncludeCss(`.a{color:#fff}`);
   }).timeout(TIMEOUT);
 
   it(`should be not clean css`, async () => {
-    await buildThemeCSS({ min: false, list: [{ key: 'custom', modifyVars: { '@a': '#f60' }, filePath }] });
-    expectIncludeCss(`.a {`);
+    await buildThemeCSS({ min: false, list: [{ key: 'custom', modifyVars: { '@primary-color': '#f60' }, filePath }] });
+    expect(existsSync(filePath)).eq(true);
+    const all = readFileSync(filePath, 'utf-8');
+    // + 1 end of line
+    expect(all.split('\n').length).eq(3 + 1);
   }).timeout(TIMEOUT);
 
   it(`should be throw error 'Not found valid theme configuration'`, async () => {

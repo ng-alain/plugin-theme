@@ -150,6 +150,7 @@ export async function buildThemeCSS(config: ThemeCssConfig): Promise<void> {
     }
     return buildCss(options).then(css => {
       writeFileSync(item.filePath!, css);
+      console.log(`✅ Style '${item.key}' generated successfully. Output: ${item.filePath!}`);
     });
   });
 

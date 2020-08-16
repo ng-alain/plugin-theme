@@ -189,7 +189,7 @@ export async function generateTheme(config: ColorLessConfig): Promise<string> {
     // 6、保存
     if (config.outputFilePath) {
       writeFileSync(config.outputFilePath, css);
-      console.log(`🌈 Theme generated successfully. OutputFile: ${config.outputFilePath}`);
+      console.log(`✅ Color less generated successfully. Output: ${config.outputFilePath}`);
     } else {
       console.log('Theme generated successfully');
     }

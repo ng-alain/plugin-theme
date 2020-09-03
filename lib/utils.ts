@@ -1,3 +1,6 @@
+import { JsonParseMode, parseJson } from '@angular-devkit/core/src/json';
+import { readFileSync } from 'fs';
+
 export function deepMergeKey(original: any, ingoreArray: boolean, ...objects: any[]): any {
   if (Array.isArray(original) || typeof original !== 'object') return original;
 
@@ -23,4 +26,16 @@ export function deepMergeKey(original: any, ingoreArray: boolean, ...objects: an
   objects.filter(v => isObject(v)).forEach(v => merge(original, v));
 
   return original;
+}
+
+export function getJSON(jsonFile: string): any {
+  const content = readFileSync(jsonFile, 'utf-8');
+  try {
+    return parseJson(content, JsonParseMode.Loose);
+  } catch (ex) {
+    console.log(
+      `Can't parse json file (${jsonFile}), pls check for comments or trailing commas, or validate json via https://jsonlint.com/`,
+    );
+    throw ex;
+  }
 }

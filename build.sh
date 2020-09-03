@@ -20,5 +20,5 @@ cp package.json dist/package.json
 cp README.md dist/README.md
 
 if [[ ${TEST} == true ]]; then
-  cp -fr dist/* ../delon/node_modules/ng-alain-plugin-theme
+  cp -fr dist/* ../ng-alain-themes/node_modules/ng-alain-plugin-theme
 fi

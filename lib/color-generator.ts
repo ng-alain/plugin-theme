@@ -13,7 +13,7 @@ const LessPluginNpmImport = require('less-plugin-npm-import');
 import { ColorLessConfig, ColorLessKV } from './color-less.types';
 
 const root = process.cwd();
-const nodeModulesPath = join(root, 'node_modules');
+let nodeModulesPath = '';
 
 async function buildLess(content: string, min = false): Promise<string> {
   const plugins = [new LessPluginNpmImport({ prefix: '~' })];
@@ -136,14 +136,11 @@ async function getValidThemeVars(
 }
 
 export async function generateTheme(config: ColorLessConfig): Promise<string> {
+  nodeModulesPath = join(root, config.nodeModulesPath || 'node_modules');
   try {
     const mappings = generateColorMap(config.themeFilePath!);
     // 1、生成所有样式的变量以及对应的 1-9 ANTD规则
-    const { randomColors, randomColorsVars, themeVars, themeCompiledVars } = await getValidThemeVars(
-      mappings,
-      config.variables!,
-      config.ngZorroAntd!,
-    );
+    const { themeVars, themeCompiledVars } = await getValidThemeVars(mappings, config.variables!, config.ngZorroAntd!);
     // 2、根据这些规则重新编译整个样式
     const varsCombined: string[] = [];
     themeVars.forEach(varName => {

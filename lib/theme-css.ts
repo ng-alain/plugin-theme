@@ -9,6 +9,7 @@ import { ThemeCssItem, BuildThemeCSSOptions, ThemeCssConfig } from './theme-css.
 import { deepMergeKey } from './utils';
 
 const root = process.cwd();
+let node_modulesPath = '';
 
 function fixConfig(config: ThemeCssConfig): ThemeCssConfig {
   config = deepMergeKey(
@@ -49,13 +50,13 @@ function fixConfig(config: ThemeCssConfig): ThemeCssConfig {
 function genThemeVars(type: 'default' | 'dark' | 'compact', extraThemeVars: string[]): { [key: string]: string } {
   const contents: string[] = [];
   // ng-zorro-antd
-  const ngZorroAntdStylePath = join(root, 'node_modules', 'ng-zorro-antd', 'style');
+  const ngZorroAntdStylePath = join(root, node_modulesPath, 'ng-zorro-antd', 'style');
   if (existsSync(ngZorroAntdStylePath)) {
     contents.push(readFileSync(join(ngZorroAntdStylePath, 'color', 'colors.less'), 'utf-8'));
     contents.push(readFileSync(join(ngZorroAntdStylePath, 'themes', `${type}.less`), 'utf-8'));
   }
   // @delon
-  const delonPath = join(root, 'node_modules', '@delon');
+  const delonPath = join(root, node_modulesPath, '@delon');
   // @delon/theme/system
   const delonSystem = join(delonPath, 'theme');
   if (existsSync(delonSystem)) {
@@ -74,9 +75,18 @@ function genThemeVars(type: 'default' | 'dark' | 'compact', extraThemeVars: stri
     contents.push(readFileSync(join(delonChart, `theme-${type}.less`), 'utf-8'));
   }
 
-  // extraThemeVars
+  // 外部样式 extraThemeVars
   if (Array.isArray(extraThemeVars) && extraThemeVars.length > 0) {
-    contents.push(...extraThemeVars.map(path => readFileSync(join(root, path), 'utf-8')));
+    contents.push(
+      ...extraThemeVars.map(path => {
+        // 自动处理 src/app/layout/name/styles/theme-#NAME#.less之类的
+        const lessFilePath = join(root, path.replace(`#NAME#`, type));
+        if (!existsSync(lessFilePath)) {
+          return '';
+        }
+        return readFileSync(lessFilePath, 'utf-8');
+      }),
+    );
   }
 
   return lessToJs(contents.join(''), {
@@ -102,10 +112,11 @@ function genVar(config: ThemeCssConfig, item: ThemeCssItem): { [key: string]: st
     const newKey = key.startsWith('@') ? key.substr(1) : key;
     stripPrefixOfModifyVars[newKey] = modifyVars[key];
   });
+  const additionalThemeVars = config.additionalThemeVars!;
   return {
-    ...genThemeVars('default', config.additionalThemeVars!),
-    ...(item.theme === 'dark' ? genThemeVars('dark', config.additionalThemeVars!) : null),
-    ...(item.theme === 'compact' ? genThemeVars('compact', config.additionalThemeVars!) : null),
+    ...genThemeVars('default', additionalThemeVars),
+    ...(item.theme === 'dark' ? genThemeVars('dark', additionalThemeVars) : null),
+    ...(item.theme === 'compact' ? genThemeVars('compact', additionalThemeVars) : null),
     ...projectTheme,
     ...stripPrefixOfModifyVars,
   };
@@ -128,18 +139,19 @@ async function buildCss(options: BuildThemeCSSOptions): Promise<string> {
 }
 
 export async function buildThemeCSS(config: ThemeCssConfig): Promise<void> {
+  node_modulesPath = config.nodeModulesPath || 'node_modules';
   config = fixConfig(config);
 
   const promises = config.list?.map(item => {
+    const modifyVars = genVar(config, item);
     const content = [
       // 如果项目入口样子已经包含 【@import '~@delon/theme/system/index';】 所以则无须增加
       // 否则部分 javascript less 变量会无法找到，例如：
       // message:'error evaluating function `color`: JavaScript evaluation error: 'ReferenceError: colorPalette is not defined''
-      // `@import '${join('node_modules/ng-zorro-antd/style/color/colors.less')}'`,
+      // `@import '${join(node_modulesPath + 'ng-zorro-antd/style/color/colors.less')}'`,
       `@import '${config.projectStylePath}';`,
       ...config.additionalLibraries!.map(v => `@import '${v}';`),
     ].join('');
-    const modifyVars = genVar(config, item);
     const options: BuildThemeCSSOptions = {
       min: config.min,
       content,

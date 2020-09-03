@@ -5,6 +5,7 @@ import { resolve } from 'path';
 import { existsSync } from 'fs';
 import { buildThemeCSS } from './theme-css';
 import { genColorLess } from './color-less';
+import { getJSON } from './utils';
 
 const cli = meow({
   help: `
@@ -35,7 +36,7 @@ let config: { theme: any; colorLess: any };
 try {
   const configFile = resolve(process.cwd(), cli.flags.config);
   if (existsSync(configFile)) {
-    config = require(configFile);
+    config = getJSON(configFile);
   } else {
     console.error(`The config file '${cli.flags.config}' will not found`);
     process.exit(1);

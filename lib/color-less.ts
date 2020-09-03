@@ -3,7 +3,6 @@ import { deepMergeKey } from './utils';
 import { generateTheme } from './color-generator';
 import { existsSync, unlinkSync } from 'fs';
 
-const root = process.cwd();
 const primaryColorVariable = '@primary-color';
 
 function fixConfig(config: ColorLessConfig): ColorLessConfig {

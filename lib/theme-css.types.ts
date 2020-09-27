@@ -1,4 +1,6 @@
-export interface ThemeCssConfig {
+import { Config } from './types';
+
+export interface ThemeCssConfig extends Config {
   /** Specify the node_modules directory, default: `node_modules` */
   nodeModulesPath?: string;
   /** Project entry style file path, default: `src/styles.less` */

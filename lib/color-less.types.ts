@@ -1,4 +1,6 @@
-export interface ColorLessConfig {
+import { Config } from './types';
+
+export interface ColorLessConfig extends Config {
   /** Specify the node_modules directory, default: `node_modules` */
   nodeModulesPath?: string;
   /**

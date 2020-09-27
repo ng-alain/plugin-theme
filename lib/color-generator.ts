@@ -11,6 +11,7 @@ const LessPluginCleanCSS = require('less-plugin-clean-css');
 const LessPluginNpmImport = require('less-plugin-npm-import');
 
 import { ColorLessConfig, ColorLessKV } from './color-less.types';
+import { d } from './utils';
 
 const root = process.cwd();
 let nodeModulesPath = '';
@@ -157,6 +158,8 @@ export async function generateTheme(config: ColorLessConfig): Promise<string> {
     @import '${config.styleFilePath!}';
     ${varsCombined.join('\n')}
   `;
+    d(config, `All vars`, allLessContent);
+
     let css = await buildLess(allLessContent);
     // 3、根据 postcss 来清除非 color 部分
     css = await postcss([reducePlugin]).process(css).css;

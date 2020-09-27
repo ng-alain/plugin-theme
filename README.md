@@ -28,6 +28,9 @@ You can use `npx` to complete the generated project `color.less` and theme style
 npx ng-alain-plugin-theme -t=themeCss
 # Generate `color.less`, dynamically customize colors
 npx ng-alain-plugin-theme -t=colorLess
+
+# DEBUG MODE
+npx ng-alain-plugin-theme -t=themeCss -debug
 ```
 
 ## Theme Styles

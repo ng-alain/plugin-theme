@@ -6,6 +6,7 @@ import { existsSync } from 'fs';
 import { buildThemeCSS } from './theme-css';
 import { genColorLess } from './color-less';
 import { getJSON } from './utils';
+import { Config } from './types';
 
 const cli = meow({
   help: `
@@ -16,6 +17,7 @@ const cli = meow({
   Options
     -t, --type    Can be set 'themeCss', 'colorLess'
     -c, --config  A filepath of NG-ALAIN config script
+    -d, --debug   Debug mode
   `,
   flags: {
     type: {
@@ -28,10 +30,15 @@ const cli = meow({
       default: 'ng-alain.json',
       alias: 'c',
     },
+    debug: {
+      type: 'boolean',
+      default: false,
+      alias: 'd',
+    },
   },
 });
 
-let config: { theme: any; colorLess: any };
+let config: { theme: Config; colorLess: Config; [key: string]: Config };
 
 try {
   const configFile = resolve(process.cwd(), cli.flags.config);
@@ -46,10 +53,18 @@ try {
   process.exit(1);
 }
 
+if (cli.flags.debug === true) {
+  ['theme', 'colorLess'].forEach(key => {
+    const item = config[key] || {};
+    item.debug = true;
+    config[key] = item;
+  });
+}
+
 if (cli.flags.type === 'themeCss') {
-  buildThemeCSS(config.theme || {});
+  buildThemeCSS(config.theme);
 } else if (cli.flags.type === 'colorLess') {
-  genColorLess(config.colorLess || {});
+  genColorLess(config.colorLess);
 } else {
   throw new Error(`Invalid type, can be set themeCss or colorLess value`);
 }

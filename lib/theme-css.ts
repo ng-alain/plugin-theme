@@ -6,7 +6,7 @@ const LessPluginNpmImport = require('less-plugin-npm-import');
 const lessToJs = require('less-vars-to-js');
 
 import { ThemeCssItem, BuildThemeCSSOptions, ThemeCssConfig } from './theme-css.types';
-import { deepMergeKey } from './utils';
+import { d, deepMergeKey } from './utils';
 
 const root = process.cwd();
 let node_modulesPath = '';
@@ -144,6 +144,7 @@ export async function buildThemeCSS(config: ThemeCssConfig): Promise<void> {
 
   const promises = config.list?.map(item => {
     const modifyVars = genVar(config, item);
+    d(config, 'All Modify Vars', modifyVars);
     const content = [
       // 如果项目入口样子已经包含 【@import '~@delon/theme/system/index';】 所以则无须增加
       // 否则部分 javascript less 变量会无法找到，例如：

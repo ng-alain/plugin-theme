@@ -60,9 +60,17 @@ function genThemeVars(type: 'default' | 'dark' | 'compact', extraThemeVars: stri
   // @delon/theme/system
   const delonSystem = join(delonPath, 'theme');
   if (existsSync(delonSystem)) {
-    contents.push(readFileSync(join(delonSystem, 'system', `theme-${type}.less`), 'utf-8'));
-    contents.push(readFileSync(join(delonSystem, 'layout', 'default', `theme-${type}.less`), 'utf-8'));
-    contents.push(readFileSync(join(delonSystem, 'layout', 'fullscreen', `theme-${type}.less`), 'utf-8'));
+    [
+      join(delonSystem, 'system', `theme-${type}.less`),
+      join(delonSystem, 'layout-default', 'style', `theme-${type}.less`),
+      join(delonSystem, 'layout-blank', 'style', `theme-${type}.less`),
+    ].forEach(filePath => {
+      if (!existsSync(filePath)) {
+        console.warn(`主题路径 ${filePath} 不存在`);
+        return;
+      }
+      contents.push(readFileSync(filePath, 'utf-8'));
+    });
   }
   // @delon/abc
   const delonABC = join(delonPath, 'abc');

@@ -72,16 +72,12 @@ function genThemeVars(type: 'default' | 'dark' | 'compact', extraThemeVars: stri
       contents.push(readFileSync(filePath, 'utf-8'));
     });
   }
-  // @delon/abc
-  const delonABC = join(delonPath, 'abc');
-  if (existsSync(delonABC)) {
-    contents.push(readFileSync(join(delonABC, `theme-${type}.less`), 'utf-8'));
-  }
-  // @delon/chart
-  const delonChart = join(delonPath, 'chart');
-  if (existsSync(delonChart)) {
-    contents.push(readFileSync(join(delonChart, `theme-${type}.less`), 'utf-8'));
-  }
+  ['abc', 'chart'].forEach(libName => {
+    const libThemePath = join(delonPath, libName, `theme-${type}.less`);
+    if (existsSync(libThemePath)) {
+      contents.push(readFileSync(libThemePath, 'utf-8'));
+    }
+  });
 
   // 外部样式 extraThemeVars
   if (Array.isArray(extraThemeVars) && extraThemeVars.length > 0) {

@@ -1,6 +1,6 @@
 {
   "name": "ng-alain-plugin-theme",
-  "version": "13.0.2",
+  "version": "13.0.3",
   "description": "NG-ALAIN theme plugin",
   "keywords": [
     "delon",
@@ -10,11 +10,11 @@
   "author": "cipchk <cipchk@qq.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ng-alain/ng-alain-plugin-theme/issues"
+    "url": "https://github.com/ng-alain/plugin-theme/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ng-alain/ng-alain-plugin-theme.git"
+    "url": "git+https://github.com/ng-alain/plugin-theme.git"
   },
   "homepage": "https://ng-alain.com",
   "bin": {

@@ -6,11 +6,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "lib": [
-      "es2018",
-      "dom"
-    ],
-    "typeRoots": [
-      "node_modules/@types"
+      "es2020", "dom"
     ],
     "removeComments": true,
     "strict": true,

@@ -6,9 +6,8 @@ import less from 'less';
 import { dirname, join } from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 const lessToJs = require('less-vars-to-js');
-const postcss = require('postcss');
-const LessPluginCleanCSS = require('less-plugin-clean-css');
-const LessPluginNpmImport = require('less-plugin-npm-import');
+import postcss, { AtRule, Declaration, Plugin, Rule } from 'postcss';
+const syntax = require('postcss-less');
 
 import { ColorLessConfig, ColorLessKV } from './color-less.types';
 import { d } from './utils';
@@ -16,14 +15,9 @@ import { d } from './utils';
 const root = process.cwd();
 let nodeModulesPath = '';
 
-async function buildLess(content: string, min: boolean, config: ColorLessConfig): Promise<string> {
-  const plugins = [new LessPluginNpmImport({ prefix: '~' })];
-  if (min) {
-    plugins.push(new LessPluginCleanCSS({ advanced: true }));
-  }
+async function buildLess(content: string, config: ColorLessConfig): Promise<string> {
   const options = {
     javascriptEnabled: true,
-    plugins,
     paths: ['node_modules/'],
     ...config.buildLessOptions,
   };
@@ -35,30 +29,33 @@ async function buildLess(content: string, min: boolean, config: ColorLessConfig)
 /**
  * 扁平化所有 less 文件
  */
-function combineLess(filePath: string): string {
+function combineLess(filePath: string, config: ColorLessConfig): string {
   if (!existsSync(filePath)) {
     return '';
   }
   const fileContent = readFileSync(filePath).toString();
   const directory = dirname(filePath);
-  return fileContent
-    .split('\n')
-    .map((line: string) => {
-      if (!line.startsWith('@import')) {
-        return line;
-      }
-      let importPath = line.match(/@import\ ["'](.*)["'];/)![1];
-      if (!importPath.endsWith('.less')) {
-        importPath += '.less';
-      }
-      let newPath = join(directory, importPath);
-      if (importPath.startsWith('~')) {
-        importPath = importPath.replace('~', '');
-        newPath = join(nodeModulesPath, `./${importPath}`);
-      }
-      return combineLess(newPath);
-    })
-    .join('\n');
+  const arr = fileContent.split('\n').map((line: string) => {
+    if (!line.startsWith('@import')) {
+      return line;
+    }
+    let importPath = line.match(/@import\ ["'](.*)["'];/)![1];
+    if (!importPath.endsWith('.less')) {
+      importPath += '.less';
+    }
+    let newPath = join(directory, importPath);
+    const startKeys = ['~'];
+    const startKeyIndex = startKeys.findIndex(key => importPath.startsWith(key));
+    if (startKeyIndex !== -1) {
+      importPath = importPath.replace(startKeys[startKeyIndex], '');
+      newPath = join(nodeModulesPath, importPath);
+    }
+    if (config.thirdLibaryNames != null && config.thirdLibaryNames.some(key => importPath.startsWith(key))) {
+      newPath = join(nodeModulesPath, importPath);
+    }
+    return combineLess(newPath, config);
+  });
+  return arr.join('\n');
 }
 
 /*
@@ -84,8 +81,8 @@ function getShade(varName: string) {
   return 'color(~`colorPalette("@{' + className.replace('@', '') + '}", ' + match[2] + ')`)';
 }
 
-function generateColorMap(themeFilePath: string): ColorLessKV {
-  const varFileContent = combineLess(themeFilePath);
+function generateColorMap(themeFilePath: string, config: ColorLessConfig): ColorLessKV {
+  const varFileContent = combineLess(themeFilePath, config);
   const mappings = lessToJs(varFileContent, {
     stripPrefix: false,
     resolveVariables: false,
@@ -134,17 +131,18 @@ async function getValidThemeVars(
     varsContent.push(`${varName}: ${randomColors[varName]};`);
   });
   // 利用 colors.less 生成
-  const colorFileContent = combineLess(join(antdPath, './style/color/colors.less'));
-  const css = await buildLess(`${colorFileContent}\n${varsContent.join('\n')}\n${themeVarsCss.reverse().join('\n')}`, false, config);
-  const regex = /.(?=\S*['-])([.a-zA-Z0-9'-]+)\ {\n {2}color: (.*);/g;
+  const colorFileContent = combineLess(join(antdPath, './style/color/colors.less'), config);
+  const css = await buildLess(`${colorFileContent}\n${varsContent.join('\n')}\n${themeVarsCss.reverse().join('\n')}`, config);
+  const regex = /.(?=\S*['-])?([.a-zA-Z0-9'-]+)\ {\n {2}color: (.*);/g;
   const themeCompiledVars = getMatches(css.replace(/(\/.*\/)/g, ''), regex);
+
   return { themeVars, randomColors, randomColorsVars, themeCompiledVars };
 }
 
 export async function generateTheme(config: ColorLessConfig): Promise<string> {
   nodeModulesPath = join(root, config.nodeModulesPath || 'node_modules');
   try {
-    const mappings = generateColorMap(config.themeFilePath!);
+    const mappings = generateColorMap(config.themeFilePath!, config);
     // 1、生成所有样式的变量以及对应的 1-9 ANTD规则
     const { themeVars, themeCompiledVars } = await getValidThemeVars(mappings, config.variables!, config.ngZorroAntd!, config);
     // 2、根据这些规则重新编译整个样式
@@ -165,9 +163,9 @@ export async function generateTheme(config: ColorLessConfig): Promise<string> {
   `;
     d(config, `All vars`, allLessContent);
 
-    let css = await buildLess(allLessContent, false, config);
+    let css = await buildLess(allLessContent, config);
     // 3、根据 postcss 来清除非 color 部分
-    css = await postcss([reducePlugin]).process(css).css;
+    css = (await postcss([reducePlugin()]).process(css, { from: undefined })).css;
     // 4、将随机颜色替换回相应的变量名
     Object.keys(themeCompiledVars).forEach(varName => {
       let color;
@@ -182,16 +180,24 @@ export async function generateTheme(config: ColorLessConfig): Promise<string> {
     });
     css = css.replace(/@[\w-_]+:\s*.*;[\/.]*/gm, '').replace(/\\9/g, '');
     // 5、插入所有变量并替换 @primary-color
-    const antdStyle = combineLess(join(config.ngZorroAntd!, './style/themes/default.less'));
-    css += `\n\n${antdStyle}`;
+    const allVar = combineLess(config.themeFilePath!, config);
+    const SPLIT_ALL_VAR_KEY = `/* SPLIT_ALL_VAR_KEY */`;
+    css += `\n\n${SPLIT_ALL_VAR_KEY}\n\n${allVar}`;
 
     themeVars.reverse().forEach(varName => {
       css = css.replace(new RegExp(`${varName}( *):(.*);`, 'g'), '');
       css = `${varName}: ${mappings[varName]};\n${css}\n`;
     });
 
+    // 6、清除非Color变量部分
+    const splitANTDArr = css.split(SPLIT_ALL_VAR_KEY);
+    if (splitANTDArr.length === 2) {
+      const cleanNoColor = (await postcss([cleanNoColorVarPlugin()]).process(splitANTDArr[0], { from: undefined, syntax: syntax })).css;
+      css = cleanNoColor + splitANTDArr[1];
+    }
+
     css = minifyCss(css);
-    // 6、保存
+    // 7、保存
     if (config.outputFilePath) {
       writeFileSync(config.outputFilePath, css);
       console.log(`✅ Color less generated successfully. Output: ${config.outputFilePath}`);
@@ -223,13 +229,8 @@ export async function generateTheme(config: ColorLessConfig): Promise<string> {
     color: #000;
  }
 */
-const reducePlugin = postcss.plugin('reducePlugin', () => {
-  const cleanRule = (rule: any) => {
-    if (rule.selector.startsWith('.main-color .palatte-')) {
-      rule.remove();
-      return;
-    }
-
+const reducePlugin: () => Plugin = () => {
+  const cleanRule = (rule: Rule) => {
     let removeRule = true;
     rule.walkDecls((decl: any) => {
       if (String(decl.value).match(/url\(.*\)/g)) {
@@ -268,20 +269,43 @@ const reducePlugin = postcss.plugin('reducePlugin', () => {
       rule.remove();
     }
   };
-  return (css: any) => {
-    css.walkAtRules((atRule: any) => {
-      atRule.remove();
-    });
+  return {
+    postcssPlugin: 'reducePlugin',
+    Once: css => {
+      css.walkAtRules((atRule: AtRule) => {
+        atRule.remove();
+      });
 
-    css.walkRules(cleanRule);
+      css.walkRules(cleanRule);
 
-    css.walkComments((c: any) => c.remove());
+      css.walkComments((c: any) => c.remove());
+    },
   };
-});
+};
+
+const cleanNoColorVarPlugin: () => Plugin = () => {
+  const cleanRule = (rule: Rule) => {
+    rule.walkDecls((decl: Declaration) => {
+      if (decl.value.startsWith('@')) {
+        return;
+      }
+      decl.remove();
+    });
+    if (rule.nodes.length === 0) {
+      rule.remove();
+    }
+  };
+  return {
+    postcssPlugin: 'cleanNoColorVarPlugin',
+    Once: css => {
+      css.walkRules(cleanRule);
+    },
+  };
+};
 
 function minifyCss(css: string) {
   // Removed all comments and empty lines
-  css = css.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').replace(/^\s*$(?:\r\n?|\n)/gm, '');
+  css = css.replace(/\/\*[\s\S]*?\*\/|\/\/ .*/g, '').replace(/^\s*$(?:\r\n?|\n)/gm, '');
 
   /*
   Converts from

@@ -1,12 +1,12 @@
 import { join } from 'path';
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'fs';
 import less from 'less';
-const LessPluginCleanCSS = require('less-plugin-clean-css');
-const LessPluginNpmImport = require('less-plugin-npm-import');
 const lessToJs = require('less-vars-to-js');
+const LessPluginCleanCSS = require('less-plugin-clean-css');
 
 import { ThemeCssItem, BuildThemeCSSOptions, ThemeCssConfig } from './theme-css.types';
 import { d, deepMergeKey } from './utils';
+import { Plugin } from 'postcss';
 
 const root = process.cwd();
 let node_modulesPath = '';
@@ -127,7 +127,7 @@ function genVar(config: ThemeCssConfig, item: ThemeCssItem): { [key: string]: st
 }
 
 async function buildCss(options: BuildThemeCSSOptions, config: ThemeCssConfig): Promise<string> {
-  const plugins = [new LessPluginNpmImport({ prefix: '~' })];
+  const plugins: any[] = [];
   if (options.min === true) {
     plugins.push(new LessPluginCleanCSS({ advanced: true }));
   }

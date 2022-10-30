@@ -13,6 +13,7 @@ function fixConfig(config: ColorLessConfig): ColorLessConfig {
       styleFilePath: `./src/styles.less`,
       themeFilePath: `./src/styles/theme.less`,
       outputFilePath: `./src/assets/color.less`,
+      thirdLibaryNames: ['@delon', 'ng-zorro-antd'],
     } as ColorLessConfig,
     false,
     config,

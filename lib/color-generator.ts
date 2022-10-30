@@ -5,12 +5,12 @@
 import less from 'less';
 import { dirname, join } from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-const lessToJs = require('less-vars-to-js');
 import postcss, { AtRule, Declaration, Plugin, Rule } from 'postcss';
-const syntax = require('postcss-less');
 
 import { ColorLessConfig, ColorLessKV } from './color-less.types';
 import { d } from './utils';
+const lessToJs = require('less-vars-to-js');
+const syntax = require('postcss-less');
 
 const root = process.cwd();
 let nodeModulesPath = '';
@@ -39,7 +39,7 @@ function combineLess(filePath: string, config: ColorLessConfig): string {
     if (!line.startsWith('@import')) {
       return line;
     }
-    let importPath = line.match(/@import\ ["'](.*)["'];/)![1];
+    let importPath = line.match(/@import ["'](.*)["'];/)![1];
     if (!importPath.endsWith('.less')) {
       importPath += '.less';
     }
@@ -73,7 +73,9 @@ function randomColor() {
   Output: color(~`colorPalette("@{primary-color}", ' 1 ')`)
 */
 function getShade(varName: string) {
-  const match = varName.match(/(.*)-(\d)/)!;
+  const match = varName.match(/(.*)-(\d)/);
+  if (match == null) return '';
+
   let className = match[1];
   if (/primary-\d/.test(varName)) {
     className = '@primary-color';
@@ -110,9 +112,9 @@ async function getValidThemeVars(
   const randomColors: ColorLessKV = {};
   const randomColorsVars: ColorLessKV = {};
   // 根据定制color重新生成一组随机颜色
-  const themeVars: string[] = variables.filter((name: any) => name in mappings && !name.match(/(.*)-(\d)/));
+  const themeVars: string[] = variables.filter(name => name in mappings && !name.match(/(.*)-(\d)/));
   const themeVarsCss: string[] = [];
-  themeVars.forEach((varName: any) => {
+  themeVars.forEach(varName => {
     let color = randomColor();
     while (randomColorsVars[color]) {
       color = randomColor();
@@ -133,7 +135,7 @@ async function getValidThemeVars(
   // 利用 colors.less 生成
   const colorFileContent = combineLess(join(antdPath, './style/color/colors.less'), config);
   const css = await buildLess(`${colorFileContent}\n${varsContent.join('\n')}\n${themeVarsCss.reverse().join('\n')}`, config);
-  const regex = /.(?=\S*['-])?([.a-zA-Z0-9'-]+)\ {\n {2}color: (.*);/g;
+  const regex = /.(?=\S*['-])?([.a-zA-Z0-9'-]+) {\n {2}color: (.*);/g;
   const themeCompiledVars = getMatches(css.replace(/(\/.*\/)/g, ''), regex);
 
   return { themeVars, randomColors, randomColorsVars, themeCompiledVars };
@@ -161,7 +163,7 @@ export async function generateTheme(config: ColorLessConfig): Promise<string> {
     @import '${config.styleFilePath!}';
     ${varsCombined.join('\n')}
   `;
-    d(config, `All vars`, allLessContent);
+    d(config, 'All vars', allLessContent);
 
     let css = await buildLess(allLessContent, config);
     // 3、根据 postcss 来清除非 color 部分
@@ -178,10 +180,11 @@ export async function generateTheme(config: ColorLessConfig): Promise<string> {
       color = color.replace('(', '\\(').replace(')', '\\)');
       css = css.replace(new RegExp(color, 'g'), `${varName}`);
     });
+    // eslint-disable-next-line no-useless-escape
     css = css.replace(/@[\w-_]+:\s*.*;[\/.]*/gm, '').replace(/\\9/g, '');
     // 5、插入所有变量并替换 @primary-color
     const allVar = combineLess(config.themeFilePath!, config);
-    const SPLIT_ALL_VAR_KEY = `/* SPLIT_ALL_VAR_KEY */`;
+    const SPLIT_ALL_VAR_KEY = '/* SPLIT_ALL_VAR_KEY */';
     css += `\n\n${SPLIT_ALL_VAR_KEY}\n\n${allVar}`;
 
     themeVars.reverse().forEach(varName => {
@@ -192,7 +195,7 @@ export async function generateTheme(config: ColorLessConfig): Promise<string> {
     // 6、清除非Color变量部分
     const splitANTDArr = css.split(SPLIT_ALL_VAR_KEY);
     if (splitANTDArr.length === 2) {
-      const cleanNoColor = (await postcss([cleanNoColorVarPlugin()]).process(splitANTDArr[0], { from: undefined, syntax: syntax })).css;
+      const cleanNoColor = (await postcss([cleanNoColorVarPlugin()]).process(splitANTDArr[0], { from: undefined, syntax })).css;
       css = cleanNoColor + splitANTDArr[1];
     }
 
@@ -232,8 +235,8 @@ export async function generateTheme(config: ColorLessConfig): Promise<string> {
 const reducePlugin: () => Plugin = () => {
   const cleanRule = (rule: Rule) => {
     let removeRule = true;
-    rule.walkDecls((decl: any) => {
-      if (String(decl.value).match(/url\(.*\)/g)) {
+    rule.walkDecls(decl => {
+      if (decl.value.match(/url\(.*\)/g)) {
         decl.remove();
       }
       const matched = false;
@@ -278,7 +281,9 @@ const reducePlugin: () => Plugin = () => {
 
       css.walkRules(cleanRule);
 
-      css.walkComments((c: any) => c.remove());
+      css.walkComments(c => {
+        c.remove();
+      });
     },
   };
 };

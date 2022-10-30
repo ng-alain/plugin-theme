@@ -6,7 +6,6 @@ const LessPluginCleanCSS = require('less-plugin-clean-css');
 
 import { ThemeCssItem, BuildThemeCSSOptions, ThemeCssConfig } from './theme-css.types';
 import { d, deepMergeKey } from './utils';
-import { Plugin } from 'postcss';
 
 const root = process.cwd();
 let node_modulesPath = '';
@@ -100,6 +99,7 @@ function genThemeVars(type: 'default' | 'dark' | 'compact', extraThemeVars: stri
 }
 
 function genVar(config: ThemeCssConfig, item: ThemeCssItem): { [key: string]: string } {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
   const fileContent = item.projectThemeVar?.map(path => readFileSync(join(root, path), 'utf-8'))!;
   // add project theme
   fileContent.push(readFileSync(join(root, config.projectStylePath!), 'utf-8'));
@@ -127,6 +127,7 @@ function genVar(config: ThemeCssConfig, item: ThemeCssItem): { [key: string]: st
 }
 
 async function buildCss(options: BuildThemeCSSOptions, config: ThemeCssConfig): Promise<string> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const plugins: any[] = [];
   if (options.min === true) {
     plugins.push(new LessPluginCleanCSS({ advanced: true }));

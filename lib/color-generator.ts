@@ -63,7 +63,7 @@ function combineLess(filePath: string, config: ColorLessConfig): string {
   e.g. #fe12ee
 */
 function randomColor() {
-  return '#' + (0x1000000 + Math.random() * 0xffffff).toString(16).substr(1, 6);
+  return '#' + (0x1000000 + Math.random() * 0xffffff).toString(16).substring(1, 7);
 }
 
 /*

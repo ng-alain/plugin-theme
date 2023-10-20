@@ -5,19 +5,27 @@ const lessToJs = require('less-vars-to-js');
 const LessPluginCleanCSS = require('less-plugin-clean-css');
 
 import { ThemeCssItem, BuildThemeCSSOptions, ThemeCssConfig } from './theme-css.types';
-import { d, deepMergeKey } from './utils';
+import { d, deepMergeKey, getJSON, mergePath } from './utils';
 
 const root = process.cwd();
 let node_modulesPath = '';
 
 function fixConfig(config: ThemeCssConfig): ThemeCssConfig {
+  let styleSourceRoot = 'src';
+  if (config.name) {
+    const angularJsonPath = join(root, 'angular.json');
+    const sourceRoot = getJSON(angularJsonPath)?.projects[config.name!].sourceRoot;
+    if (sourceRoot != null) {
+      styleSourceRoot = sourceRoot;
+    }
+  }
   config = deepMergeKey(
     {
       additionalLibraries: [],
       additionalThemeVars: [],
       list: [],
       min: true,
-      projectStylePath: 'src/styles.less',
+      projectStylePath: mergePath(styleSourceRoot, 'styles.less'),
     } as ThemeCssConfig,
     true,
     config,
@@ -32,7 +40,7 @@ function fixConfig(config: ThemeCssConfig): ThemeCssConfig {
       item.key = item.theme || 'invalid-key';
     }
     if (!item.filePath) {
-      item.filePath = `src/assets/style.${item.key || 'invalid-name'}.css`;
+      item.filePath = mergePath(styleSourceRoot, `assets/style.${item.key || 'invalid-name'}.css`);
     }
     list.push({ projectThemeVar: [], ...item });
   });

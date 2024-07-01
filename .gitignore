@@ -3,3 +3,14 @@ yarn.lock
 dist
 src/*.css
 src/color.less
+
+# Yarn
+# yarn.lock
+yarn-error.log
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*

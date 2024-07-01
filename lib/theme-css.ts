@@ -87,7 +87,6 @@ async function buildCss(options: BuildThemeCSSOptions, config: ThemeCssConfig): 
 
 function genThemeLess(type: 'default' | 'dark' | 'compact', extraThemeVars: string[]): string[] {
   const list = [] as string[];
-  if (type !== 'dark' && type !== 'compact') return list;
   // ng-zorro-antd
   if (existsSync(join(root, node_modulesPath, 'ng-zorro-antd/style'))) {
     list.push(`@import 'ng-zorro-antd/style/themes/${type}.less';`);
